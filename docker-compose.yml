@@ -1,0 +1,62 @@
+services:
+  todo_list_api_php-fpm:
+    container_name: todo_list_api_php-fpm
+    build:
+      context: ./
+      dockerfile: ./_docker/php-fpm/Dockerfile
+      args:
+        - PUID=${PUID}
+        - PGID=${PGID}
+    volumes:
+      - ./:/var/www/
+    networks:
+      - shared
+
+  todo_list_api_php-cli:
+    container_name: todo_list_api_php-cli
+    build:
+      context:  ./
+      dockerfile: ./_docker/php-cli/Dockerfile
+    restart: on-failure
+    volumes:
+      - ./:/var/www/
+    networks:
+      - shared
+
+  todo_list_api_nginx:
+    container_name: todo_list_api_nginx
+    build:
+      context: ./
+      dockerfile: ./_docker/nginx/Dockerfile
+    ports:
+      - ${NGINX_HOST_HTTP_PORT}:${NGINX_HOST_HTTP_PORT}
+    volumes:
+      - ./:/var/www:rw
+    depends_on:
+      - todo_list_api_php-fpm
+    networks:
+      - shared
+
+  todo_list_api_postgres:
+    container_name: todo_list_api_postgres
+    build:
+      context: ./
+      dockerfile: ./_docker/postgres/Dockerfile
+    ports:
+      - ${POSTGRES_EXTERNAL_PORT}:${POSTGRES_PORT}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - todo_list_api_postgres:/var/lib/postgresql/data:rw
+    networks:
+      - shared
+
+volumes:
+  todo_list_api_postgres:
+    external: false
+
+networks:
+  shared:
+    external: false
